@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "botscope"
+version = "0.1.0"
+description = "Evidence-led web and API discovery for bot protection planning"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-only"
+dependencies = ["PyYAML>=6.0.2,<7"]
+
+[project.optional-dependencies]
+reports = ["openpyxl>=3.1.5,<4", "reportlab>=4.2,<5"]
+browser = ["playwright>=1.51,<2"]
+dev = ["build>=1.2,<2"]
+
+[project.scripts]
+botscope = "botscope.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+botscope = ["data/*.json", "templates/*.html"]

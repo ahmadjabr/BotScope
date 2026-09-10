@@ -1,0 +1,8 @@
+{
+  "https://www.example.com": {
+    "Cookie": "session=REPLACE_WITH_TEST_SESSION"
+  },
+  "https://api.example.com": {
+    "Authorization": "Bearer REPLACE_WITH_TEST_TOKEN"
+  }
+}

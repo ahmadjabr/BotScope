@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+reports/
+inputs/
+secrets/
+.env
+*.har
+*storage-state*.json
+*headers*.json
+!examples/headers.example.json

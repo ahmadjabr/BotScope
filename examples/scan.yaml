@@ -1,0 +1,47 @@
+# Copy this file to your private working directory. Only scan authorized applications.
+target: https://www.example.com
+allowed_origins:
+  - https://api.example.com
+seed_urls:
+  - https://www.example.com/login
+  - https://www.example.com/products
+max_requests: 3000
+max_endpoints: 20000
+max_depth: 12
+max_seconds: 3600
+max_response_bytes: 2000000
+max_query_variants: 10
+requests_per_second: 2
+timeout: 15
+respect_robots: true
+allow_private: false
+discover_specs: true
+browser: true
+browser_pages: 50
+exclude_paths:
+  - /admin/*
+  - /logout*
+# File references below are relative to THIS config file.
+# headers_file: ../secrets/headers.json
+# ca_bundle: ../secrets/enterprise-ca.pem
+# imports:
+#   - type: openapi
+#     path: ../inputs/openapi.yaml
+#     base_url: https://api.example.com
+#   - type: har
+#     path: ../inputs/customer-journey.har
+#   - type: har
+#     path: ../inputs/admin-journey.har
+#   - type: postman
+#     path: ../inputs/collection.json
+#     variables:
+#       baseUrl: https://api.example.com
+#   - type: xc
+#     path: ../inputs/xc-endpoints.csv
+#     mapping:
+#       method: http_method
+#       path: endpoint_path
+#       host: domain_name
+#   - type: graphql
+#     path: ../inputs/graphql-introspection.json
+#     endpoint: https://api.example.com/graphql

@@ -1,0 +1,600 @@
+{
+  "version": "1.0",
+  "source": "https://github.com/OWASP/www-project-automated-threats-to-web-applications/blob/master/tab_ontology.md",
+  "scoring": "Analyst-defined inherent exposure priority, not CVSS, attack likelihood or verified residual risk. Confidence concerns endpoint classification.",
+  "owasp": [
+    {
+      "id": "OAT-001",
+      "name": "Carding",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-002",
+      "name": "Token Cracking",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-003",
+      "name": "Cost-Inflation Fraud",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-004",
+      "name": "Fingerprinting",
+      "assessment_mode": "Cross-cutting manual review; not automatically proven by URL discovery"
+    },
+    {
+      "id": "OAT-005",
+      "name": "Scalping",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-006",
+      "name": "Expediting",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-007",
+      "name": "Credential Cracking",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-008",
+      "name": "Credential Stuffing",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-009",
+      "name": "CAPTCHA Defeat",
+      "assessment_mode": "Cross-cutting manual review; not automatically proven by URL discovery"
+    },
+    {
+      "id": "OAT-010",
+      "name": "Card Cracking",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-011",
+      "name": "Scraping",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-012",
+      "name": "Cashing Out",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-013",
+      "name": "Sniping",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-014",
+      "name": "Vulnerability Scanning",
+      "assessment_mode": "Cross-cutting manual review; not automatically proven by URL discovery"
+    },
+    {
+      "id": "OAT-015",
+      "name": "Denial of Service",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-016",
+      "name": "Skewing",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-017",
+      "name": "Spamming",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-018",
+      "name": "Footprinting",
+      "assessment_mode": "Cross-cutting manual review; not automatically proven by URL discovery"
+    },
+    {
+      "id": "OAT-019",
+      "name": "Account Creation",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-020",
+      "name": "Account Aggregation",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    },
+    {
+      "id": "OAT-021",
+      "name": "Denial of Inventory",
+      "assessment_mode": "Endpoint/business-flow hypothesis; requires validation"
+    }
+  ],
+  "rules": [
+    {
+      "id": "BS-001",
+      "name": "Credential stuffing",
+      "patterns": [
+        "\\b(login|log in|signin|sign in|authenticate|authentication|password field)\\b"
+      ],
+      "owasp": [
+        "OAT-008"
+      ],
+      "score": 88,
+      "scenario": "Automated reuse of stolen account credentials against the authentication flow.",
+      "controls": [
+        "Bot telemetry across the login page and submission endpoint",
+        "Per-account/device/network velocity and breached-credential defenses",
+        "Risk-based MFA and account takeover monitoring"
+      ],
+      "validation": "Use approved test accounts and identity logs to verify login controls and legitimate-user impact.",
+      "exclude": "\\b(register|registration|signup|sign up|forgot|reset|recovery|recover|change password)\\b"
+    },
+    {
+      "id": "BS-002",
+      "name": "Password spraying and credential cracking",
+      "patterns": [
+        "\\b(login|log in|signin|sign in|authenticate|authentication|password field)\\b"
+      ],
+      "owasp": [
+        "OAT-007",
+        "OAT-015"
+      ],
+      "score": 85,
+      "scenario": "Distributed guessing or lockout abuse can target authentication without high per-IP volume.",
+      "controls": [
+        "Distributed failure correlation",
+        "Account-aware throttling without easy lockout DoS",
+        "Strong authentication and MFA"
+      ],
+      "validation": "Review failure rates across accounts, lockout behavior and identity-provider coverage.",
+      "exclude": "\\b(register|registration|signup|sign up|forgot|reset|recovery|recover|change password)\\b"
+    },
+    {
+      "id": "BS-003",
+      "name": "Fake accounts and referral farming",
+      "patterns": [
+        "\\b(register|registration|signup|sign up|create account|referral|invite)\\b"
+      ],
+      "owasp": [
+        "OAT-019",
+        "OAT-006"
+      ],
+      "score": 80,
+      "scenario": "Automation can create accounts or consume onboarding/referral rewards at scale.",
+      "controls": [
+        "Signup bot telemetry",
+        "Identity/device and referral velocity checks",
+        "Verification and reward eligibility rules"
+      ],
+      "validation": "Confirm disposable-identity controls, legitimate signup rates and referral reward boundaries."
+    },
+    {
+      "id": "BS-004",
+      "name": "Recovery abuse and reset flooding",
+      "patterns": [
+        "\\b(forgot|reset password|password reset|recover|recovery)\\b"
+      ],
+      "owasp": [
+        "OAT-002",
+        "OAT-003",
+        "OAT-015"
+      ],
+      "score": 82,
+      "scenario": "Recovery requests may be abused for token guessing, account discovery or notification flooding.",
+      "controls": [
+        "Uniform responses",
+        "Per-account and destination quotas",
+        "Short-lived single-use recovery tokens"
+      ],
+      "validation": "Review reset request and token validation separately; confirm that notifications cannot be flooded."
+    },
+    {
+      "id": "BS-005",
+      "name": "OTP/SMS/voice pumping",
+      "patterns": [
+        "\\b(?:(?:send|resend|request|dispatch).*?(?:otp|sms|code|voice)|(?:otp|sms|voice).*?(?:send|resend|request))\\b"
+      ],
+      "owasp": [
+        "OAT-003",
+        "OAT-017",
+        "OAT-015"
+      ],
+      "score": 90,
+      "scenario": "Automated requests can generate paid messages or calls and exhaust delivery budgets.",
+      "controls": [
+        "Per-destination/device/account quotas",
+        "Country and cost anomaly controls",
+        "Provider spend limits and resend cooldowns"
+      ],
+      "validation": "Verify destination quotas, resend windows, spending caps and monitoring with the application owner."
+    },
+    {
+      "id": "BS-006",
+      "name": "OTP and verification-token guessing",
+      "patterns": [
+        "\\b(verify|verification|otp|mfa|activation)\\b"
+      ],
+      "owasp": [
+        "OAT-002"
+      ],
+      "score": 82,
+      "scenario": "Automated token attempts can attack short verification or authentication codes.",
+      "controls": [
+        "Attempt limits bound to identity and transaction",
+        "Short-lived, single-use tokens",
+        "Replay detection and risk-based MFA"
+      ],
+      "validation": "Confirm code entropy, attempt limits, expiry and server-side transaction binding.",
+      "exclude": "\\b(send|resend|dispatch)\\b"
+    },
+    {
+      "id": "BS-007",
+      "name": "Carding and card cracking",
+      "patterns": [
+        "\\b(card|cards|payment|payments|cvv|cvc|cardnumber|card number|authorize|authorise)\\b"
+      ],
+      "owasp": [
+        "OAT-001",
+        "OAT-010"
+      ],
+      "score": 95,
+      "scenario": "A payment or card-validation flow can be used to test stolen cards or guess missing card details.",
+      "controls": [
+        "Payment bot signals",
+        "Card/device/account velocity correlation",
+        "Payment-provider fraud controls and risk-based 3DS"
+      ],
+      "validation": "Review gateway decline patterns and approved test-card procedures; do not test real card data.",
+      "exclude": "\\b(webhooks?|callbacks?)\\b"
+    },
+    {
+      "id": "BS-008",
+      "name": "Cashing out and loyalty theft",
+      "patterns": [
+        "\\b(checkout|purchase|payout|withdraw|withdrawal|transfer|redeem|redemption|loyalty)\\b"
+      ],
+      "owasp": [
+        "OAT-012"
+      ],
+      "score": 92,
+      "scenario": "Compromised accounts or stolen value can be converted into purchases, transfers or rewards.",
+      "controls": [
+        "Step-up checks on high-value actions",
+        "Beneficiary/device/transaction velocity controls",
+        "Business authorization and fraud monitoring"
+      ],
+      "validation": "Confirm transaction limits, step-up authentication, replay handling and the actual financial impact."
+    },
+    {
+      "id": "BS-009",
+      "name": "Scalping",
+      "patterns": [
+        "\\b(ticket|tickets|booking|bookings|reservation|reservations|checkout|launch|queue|appointment|appointments)\\b"
+      ],
+      "owasp": [
+        "OAT-005"
+      ],
+      "score": 85,
+      "scenario": "Automation may gain unfair access to limited tickets, products, bookings or appointments.",
+      "controls": [
+        "Queue integrity and bot telemetry",
+        "Account/device purchase limits",
+        "Fairness and inventory-allocation controls"
+      ],
+      "validation": "Validate scarcity, legitimate queue behavior and limits per customer across sessions.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-010",
+      "name": "Denial of inventory",
+      "patterns": [
+        "\\b(cart|basket|reserve|reservation|reservations|hold|booking|bookings)\\b"
+      ],
+      "owasp": [
+        "OAT-021"
+      ],
+      "score": 86,
+      "scenario": "Repeated holds or abandoned reservations can make stock or appointments unavailable.",
+      "controls": [
+        "Short bounded holds",
+        "Per-identity concurrent hold quotas",
+        "Release and abandonment monitoring"
+      ],
+      "validation": "Check inventory-hold lifecycle, maximum concurrent reservations and automatic release.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-011",
+      "name": "Content, price and data scraping",
+      "patterns": [
+        "\\b(search|products?|catalog|catalogue|prices?|flights?|availability|listings?|articles?|feed|feeds|export|download|directory|graphql)\\b"
+      ],
+      "owasp": [
+        "OAT-011"
+      ],
+      "score": 68,
+      "scenario": "Automated harvesting can collect commercial content, prices, availability or large data sets.",
+      "controls": [
+        "Behavioral bot detection",
+        "Pagination/result limits and access entitlements",
+        "Identity quotas with verified good-bot exceptions"
+      ],
+      "validation": "Identify valuable data, acceptable crawlers, data licensing and normal pagination volumes.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-012",
+      "name": "Coupon and gift-card enumeration",
+      "patterns": [
+        "\\b(coupon|promo|promotion|voucher|gift card|giftcard|discount|balance|redeem)\\b"
+      ],
+      "owasp": [
+        "OAT-002",
+        "OAT-012"
+      ],
+      "score": 84,
+      "scenario": "Repeated code or balance lookups can discover valid promotional or stored-value tokens.",
+      "controls": [
+        "Token/account/device lookup quotas",
+        "High-entropy tokens and uniform failures",
+        "Redemption fraud monitoring"
+      ],
+      "validation": "Review token entropy, lookup response differences and per-identity redemption limits."
+    },
+    {
+      "id": "BS-013",
+      "name": "Spam and message abuse",
+      "patterns": [
+        "\\b(contact|message|messages|comment|comments|chat|forum|feedback|newsletter|subscribe|support|lead)\\b"
+      ],
+      "owasp": [
+        "OAT-017",
+        "OAT-003"
+      ],
+      "score": 72,
+      "scenario": "Automated submissions can distribute spam, poison content or flood inboxes and support queues.",
+      "controls": [
+        "Submission telemetry and per-recipient quotas",
+        "Content moderation",
+        "Server-side anti-automation and identity checks"
+      ],
+      "validation": "Check recipients, publication behavior, moderation and notification fan-out.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-014",
+      "name": "Metric and reputation manipulation",
+      "patterns": [
+        "\\b(vote|votes|poll|polls|rating|ratings|review|reviews|like|likes|follow|followers|analytics|impression|click)\\b"
+      ],
+      "owasp": [
+        "OAT-016"
+      ],
+      "score": 72,
+      "scenario": "Repeated automated interactions can alter reviews, rankings, engagement or other business metrics.",
+      "controls": [
+        "Identity and event deduplication",
+        "Velocity and relationship analysis",
+        "Signed analytics events where appropriate"
+      ],
+      "validation": "Validate uniqueness rules and how submitted events affect business metrics.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-015",
+      "name": "Paid-service and advertising cost inflation",
+      "patterns": [
+        "\\b(adclick|ad click|impression|campaign|sms|voice|geocode|translate|translation|generate|inference|completion|completions|llm)\\b"
+      ],
+      "owasp": [
+        "OAT-003",
+        "OAT-015"
+      ],
+      "score": 85,
+      "scenario": "Bots can consume chargeable advertising, messaging, compute or AI services.",
+      "controls": [
+        "Per-identity cost budgets",
+        "Provider quotas and anomaly alerts",
+        "Bound expensive work to authenticated entitlements"
+      ],
+      "validation": "Document unit cost, normal consumption, budget caps and abuse alerting.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-016",
+      "name": "Application resource exhaustion",
+      "patterns": [
+        "\\b(search|export|report|reports|render|convert|upload|uploads|graphql|generate|inference|batch|bulk)\\b"
+      ],
+      "owasp": [
+        "OAT-015"
+      ],
+      "score": 76,
+      "scenario": "Automated expensive requests may consume compute, storage, database or upstream capacity.",
+      "controls": [
+        "Cost-aware quotas and concurrency limits",
+        "Request/body/response bounds",
+        "Caching and asynchronous job admission"
+      ],
+      "validation": "Review expensive operations, timeout budgets and capacity without running load tests.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-017",
+      "name": "Auction sniping",
+      "patterns": [
+        "\\b(auction|bid|bids|bidding)\\b"
+      ],
+      "owasp": [
+        "OAT-013"
+      ],
+      "score": 80,
+      "scenario": "Automation can submit precisely timed bids near auction close.",
+      "controls": [
+        "Server-side fairness rules",
+        "Bot signals around bidding",
+        "Bid velocity and identity checks"
+      ],
+      "validation": "Confirm auction timing rules and what constitutes unfair automated bidding.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-018",
+      "name": "Expediting and workflow automation",
+      "patterns": [
+        "\\b(queue|waitlist|wait list|progress|reward|quest|claim|check in|checkin)\\b"
+      ],
+      "owasp": [
+        "OAT-006"
+      ],
+      "score": 70,
+      "scenario": "Automation may accelerate workflows, collect rewards or bypass expected participation.",
+      "controls": [
+        "Server-side workflow state validation",
+        "Time/sequence checks and reward quotas",
+        "Bot telemetry at valuable actions"
+      ],
+      "validation": "Confirm required steps and server-side enforcement of workflow order and rewards.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-019",
+      "name": "Account aggregation",
+      "patterns": [
+        "\\b(aggregation|aggregator|connect account|linked accounts|sync accounts|bank connect)\\b"
+      ],
+      "owasp": [
+        "OAT-020"
+      ],
+      "score": 65,
+      "scenario": "Intermediary automation may collect or interact with multiple accounts, legitimately or abusively.",
+      "controls": [
+        "Consent and API entitlements",
+        "Delegated OAuth access",
+        "Partner identification and per-client quotas"
+      ],
+      "validation": "Distinguish permitted aggregators and customer consent from unauthorized automated access.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-020",
+      "name": "Account and object enumeration",
+      "patterns": [
+        "\\b(check user|check email|email available|username available|user exists|lookup|tracking|order status|pnr)\\b"
+      ],
+      "owasp": [
+        "OAT-002",
+        "OAT-011"
+      ],
+      "score": 76,
+      "scenario": "Repeated lookups can identify accounts, bookings or other business objects.",
+      "controls": [
+        "Uniform lookup responses where appropriate",
+        "Identity-aware quotas",
+        "Object-level authorization"
+      ],
+      "validation": "Compare response behavior using approved test data and verify object authorization; bot protection cannot repair authorization flaws.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-021",
+      "name": "API token and session abuse",
+      "patterns": [
+        "\\b(oauth|token|refresh|session|api key|apikey)\\b"
+      ],
+      "owasp": [
+        "OAT-002",
+        "OAT-007",
+        "OAT-015"
+      ],
+      "score": 79,
+      "scenario": "Automated token requests, refreshes or repeated session creation can abuse identity services.",
+      "controls": [
+        "Client-bound quotas",
+        "Token rotation/replay controls",
+        "Identity-provider monitoring"
+      ],
+      "validation": "Identify client credentials versus user authentication and protect the correct grant/refresh flow."
+    },
+    {
+      "id": "BS-022",
+      "name": "GraphQL batching and operation abuse",
+      "patterns": [
+        "\\bgraphql\\b"
+      ],
+      "owasp": [
+        "OAT-011",
+        "OAT-015"
+      ],
+      "score": 78,
+      "scenario": "One GraphQL URL can expose many operations; batching, aliases or costly resolvers may amplify automation.",
+      "controls": [
+        "Operation-aware quotas and complexity limits",
+        "Pagination bounds and authorization at resolvers",
+        "Persisted-operation policies where compatible"
+      ],
+      "validation": "Inventory actual operations and validate cost, depth, alias and batch limits; no introspection or mutation is sent by BotScope.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-023",
+      "name": "Upload and storage abuse",
+      "patterns": [
+        "\\b(upload|uploads|attachment|attachments|media upload)\\b"
+      ],
+      "owasp": [
+        "OAT-015",
+        "OAT-017"
+      ],
+      "score": 77,
+      "scenario": "Automated submissions can exhaust storage or distribute unwanted content.",
+      "controls": [
+        "Authenticated storage quotas",
+        "Upload size/type limits",
+        "Malware/content inspection and expiry policies"
+      ],
+      "validation": "Confirm storage costs, ownership, moderation and cleanup behavior.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-024",
+      "name": "Webhook and callback abuse",
+      "patterns": [
+        "\\b(webhooks?|callbacks?|notify)\\b"
+      ],
+      "owasp": [
+        "OAT-015",
+        "OAT-017"
+      ],
+      "score": 70,
+      "scenario": "Repeated or replayed callbacks can trigger unnecessary work or business actions.",
+      "controls": [
+        "Signature and timestamp validation",
+        "Replay/idempotency checks",
+        "Partner-specific quotas"
+      ],
+      "validation": "Confirm sender verification and idempotency; interactive browser challenges are usually unsuitable.",
+      "match_on": "route"
+    },
+    {
+      "id": "BS-025",
+      "name": "Realtime channel abuse",
+      "patterns": [
+        "\\b(websocket|socket io|signalr|negotiate|hub|stream|events)\\b"
+      ],
+      "owasp": [
+        "OAT-015",
+        "OAT-017"
+      ],
+      "score": 70,
+      "scenario": "Automated channel creation or messages may exhaust connections or amplify application work.",
+      "controls": [
+        "Authenticated connection quotas",
+        "Message-rate and size limits",
+        "Handshake telemetry and replay controls"
+      ],
+      "validation": "Confirm transport and long-lived session controls; discovery does not test WebSocket messages.",
+      "match_on": "route"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+host,path,method,function,client_type,observed,declared,status,parameters
+shop.example.test,/api/login,POST,Customer sign in,browser,true,true,200,username;password
+shop.example.test,/api/cart/reserve,POST,Reserve stock,browser,true,true,200,productId;quantity
+shop.example.test,/api/otp/send,POST,Send verification SMS,mobile,true,true,200,phone;purpose
+shop.example.test,/api/graphql,POST,GraphQL API,mixed,true,true,200,query;variables
+shop.example.test,/webhooks/payment,POST,Payment provider event,service,true,true,200,eventId;signature
