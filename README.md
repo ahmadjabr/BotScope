@@ -13,7 +13,7 @@ This is an **exposure assessment and protection planning tool**. It does not cla
 - **25 assessment scenarios:** credential attacks, fake accounts, recovery/OTP abuse, carding, scraping, scalping, inventory denial, coupon/gift-card abuse, spam, reputation manipulation, cost/resource exhaustion, GraphQL and realtime abuse, and more. Includes the 21-category OWASP Automated Threat catalogue.
 - **Clear decisions:** Recommended, Conditional, Verify method, Verify existence, Review, or Usually unnecessary. Browser, mobile and service-client guidance remain distinct.
 - **Reports:** searchable/filterable HTML, JSON, CSV, optional Excel/PDF, and a protection planning CSV. All work locally; no hosted backend, paid API or LLM key is required.
-- **Operational controls:** explicit scope, rate/request/time/depth limits, private-target opt-in, TLS validation, DNS pinning, data redaction and coverage gaps. No credential guessing or form submission.
+- **Operational controls:** explicit scope, rate/request/time/depth limits, private-target opt-in, TLS validation, DNS pinning, data redaction and coverage gaps. Browser actions are bounded and safe by default; form submission is opt-in and allowlisted.
 
 ## Quick start
 
@@ -48,6 +48,29 @@ botscope scan --target https://www.example.com \
 ```
 
 Replace the example origins with your authorized website/API origins. Additional subdomains are not automatically included. The default rate is two requests/second; rendering uses the same total request budget. Root and API origins are separate scope entries. For an internal site, add `--allow-private`. TLS checks remain enabled.
+
+### Advanced browser discovery (explicit opt-in)
+
+Use these controls only against systems you own or have written authorization to assess:
+
+```bash
+botscope scan --target https://staging.example.com --allow-private --browser \
+  --websockets --session inputs/role-user.json --session inputs/role-admin.json \
+  --hidden-paths inputs/paths.txt --max-hidden-paths 300 \
+  --max-interactions 150 --output reports/advanced --formats json,html,csv
+```
+
+Rendered discovery preserves `/#/...` SPA routes, clicks only non-destructive navigation controls, and records WebSocket channel/message shapes without frame contents. Session files are Playwright storage-state JSON files and are kept local. Hidden paths are bounded newline-delimited candidates and use guarded GET/HEAD requests; they are never brute-forced without a supplied wordlist.
+
+Form testing is disabled by default. On a private/staging target, enable it with exact path globs and harmless generated values:
+
+```bash
+botscope scan --target https://staging.example.com --allow-private --browser \
+  --test-forms --form-allowlist '/search' --form-allowlist '/feedback' \
+  --max-form-tests 5
+```
+
+Login, recovery, payment and other sensitive fields remain skipped unless `--allow-sensitive-forms` is explicitly supplied. Non-GET browser requests are aborted unless they are the resulting request from an allowlisted form test. These options do not guess credentials, replay imported request bodies, or claim that a route is exploitable.
 
 ## Best coverage for work assessments
 
@@ -105,7 +128,7 @@ imports:
     endpoint: https://api.example.com/graphql
 ```
 
-The importer treats root schema fields as candidates with assumed POST transport; validate this assumption. It does not execute introspection, mutations or subscriptions. Runtime operation names from HAR are preserved. WebSocket message payloads are not inspected.
+The importer treats root schema fields as candidates with assumed POST transport; validate this assumption. It does not execute introspection, mutations or subscriptions. Runtime operation names from HAR are preserved. With `--websockets`, rendered discovery records bounded, value-redacted WebSocket schemas; payload contents are never exported.
 
 ## Reading the report
 

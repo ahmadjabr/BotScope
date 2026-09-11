@@ -16,7 +16,9 @@ Run BotScope only against applications you are authorized to assess. Set exact o
 
 ## Browser mode
 
-Every intercepted HTTP request uses BotScope's scope, DNS validation, request budget and rate limiter. Non-GET methods are recorded and aborted. Service workers and WebSockets are blocked, and there are no automatic clicks or form submissions. Browser response cookies are not persisted; use origin-bound headers or HAR imports for authentication-dependent coverage. Routes requiring session negotiation or browser localStorage may not render correctly.
+Every intercepted HTTP request uses BotScope's scope, DNS validation, request budget and rate limiter. Non-GET methods are recorded and aborted unless they are produced by an explicitly allowlisted form test. Safe navigation controls can be clicked within a global budget; destructive controls and controls inside forms are skipped. WebSockets are blocked unless passive capture is explicitly enabled, in which case only redacted message schemas are retained. Browser response cookies are not persisted; use supplied Playwright storage-state sessions, origin-bound headers or HAR imports for authentication-dependent coverage. Routes requiring session negotiation or browser localStorage may not render correctly.
+
+Hidden-path discovery is opt-in, uses only a supplied bounded wordlist and guarded GET/HEAD requests, and does not generate names or brute-force directories. Form testing is opt-in, requires `--allow-private` plus exact path allowlists, uses generated harmless values, skips sensitive fields by default and is capped by `max_form_tests`. Supplying a sensitive-form override can cause account or workflow side effects and should be limited to disposable staging accounts.
 
 The browser executes target JavaScript and may consume more resources or requests than static discovery. Run it in a disposable environment with appropriate OS/container isolation. A missing browser dependency produces a coverage issue and nonzero CLI result instead of silently claiming rendered discovery succeeded.
 

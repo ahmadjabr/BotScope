@@ -27,6 +27,7 @@ class PageParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.url, self.base = url, url
         self.links: list[tuple[str, str]] = []
+        self.spa_routes: list[str] = []
         self.forms: list[dict] = []
         self.scripts: list[str] = []
         self.current_form = None
@@ -45,6 +46,11 @@ class PageParser(HTMLParser):
             if value:
                 kind = "javascript_asset" if tag == "script" or (tag == "link" and a.get("rel") == "modulepreload") else "html_link"
                 self.links.append((value, kind))
+                if "#" in value and value.split("#", 1)[1].startswith("/"):
+                    self.spa_routes.append(value)
+        for key in ("data-route", "data-href", "data-url"):
+            if a.get(key) and "#" in a[key] and a[key].split("#", 1)[1].startswith("/"):
+                self.spa_routes.append(a[key])
         if tag == "meta" and a.get("http-equiv", "").lower() == "refresh":
             match = re.search(r"(?i)url\s*=\s*['\"]?([^'\"]+)", a.get("content", ""))
             if match:
@@ -161,3 +167,37 @@ def body_parameter_names(body: str, mime: str = "") -> list[str]:
             from urllib.parse import parse_qsl
             return [safe_label(k) for k, _ in parse_qsl(body, max_num_fields=1000)]
         return []
+
+
+def websocket_message_schema(payload) -> dict:
+    """Return a redacted shape for a WebSocket frame; never retain values."""
+    if isinstance(payload, bytes):
+        raw = payload[:1_000_000]
+        try:
+            payload = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return {"kind": "binary", "bytes": len(raw)}
+    if not isinstance(payload, str):
+        return {"kind": type(payload).__name__}
+    try:
+        value = json.loads(payload)
+    except (ValueError, RecursionError):
+        return {"kind": "text", "length": min(len(payload), 1_000_000)}
+
+    def shape(value, depth=0):
+        if depth > 6:
+            return "nested"
+        if isinstance(value, dict):
+            return {safe_label(str(key), 80): shape(item, depth + 1) for key, item in list(value.items())[:100]}
+        if isinstance(value, list):
+            return [shape(value[0], depth + 1)] if value else []
+        if value is None:
+            return "null"
+        if isinstance(value, bool):
+            return "boolean"
+        if isinstance(value, (int, float)):
+            return "number"
+        return "string"
+
+    shaped = shape(value)
+    return {"kind": "json", "shape": shaped}

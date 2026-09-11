@@ -6,13 +6,14 @@ import re
 import time
 from collections import Counter, deque
 from datetime import datetime, timezone
-from urllib.parse import urlsplit
+from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
 from .config import Scope
-from .discovery import PageParser, control_hints, javascript_refs, json_refs, sitemap_refs
+from .discovery import PageParser, control_hints, javascript_refs, json_refs, sitemap_refs, websocket_message_schema
 from .importers import import_file, import_openapi, load_document
-from .model import Inventory, STATIC, canonical_url, display_url, origin
+from .model import Inventory, STATIC, canonical_url, display_url, origin, safe_label
 from .transport import BudgetExceeded, FetchError, Fetcher
 
 SPEC_PATHS = ("/openapi.json", "/openapi.yaml", "/swagger.json", "/api-docs", "/v3/api-docs", "/api/openapi.json", "/swagger/v1/swagger.json")
@@ -30,9 +31,87 @@ class Scanner:
         self.skipped = Counter()
         self.robots: dict[str, RobotFileParser] = {}
         self.browser_candidates = []
+        self.websocket_channels: dict[str, dict] = {}
+        self.form_expected: set[str] = set()
+        self.form_tests_submitted = 0
+        self.form_tests_skipped = 0
+        self.interactions_done = 0
+        self.hidden_paths_enqueued = 0
         self.started = datetime.now(timezone.utc).isoformat()
         self.stop_reason = "frontier_exhausted"
         self.browser_result = {"enabled": config.browser, "pages_rendered": 0}
+
+    def add_browser_candidate(self, url: str, source: str = "browser_candidate") -> None:
+        """Queue a browser URL, retaining SPA fragments that HTTP canonicalization drops."""
+        if url not in self.browser_candidates:
+            self.browser_candidates.append(url)
+            self.inventory.add(url.split("#", 1)[0], "GET", source,
+                               evidence="Browser navigation candidate; route may be client-side")
+
+    def record_websocket(self, websocket_url: str, direction: str = "channel", payload=None) -> None:
+        """Record only a redacted WebSocket schema, never frame contents."""
+        parts = urlsplit(websocket_url)
+        if parts.scheme not in {"ws", "wss"} or not parts.hostname:
+            return
+        http_url = websocket_url.replace("ws://", "http://", 1).replace("wss://", "https://", 1)
+        if not self.scope.contains(http_url):
+            self.skipped["websocket_outside_scope"] += 1
+            return
+        display = display_url(http_url)
+        channel = self.websocket_channels.setdefault(display, {"url": display, "frames": 0, "directions": {}, "schemas": []})
+        if direction == "channel":
+            channel["directions"].setdefault("channel", 0)
+            return
+        channel["frames"] += 1
+        channel["directions"][direction] = channel["directions"].get(direction, 0) + 1
+        schema = websocket_message_schema(payload)
+        if schema not in channel["schemas"] and len(channel["schemas"]) < 100:
+            channel["schemas"].append(schema)
+
+    def form_request_allowed(self, url: str, method: str) -> bool:
+        if not self.config.form_testing or method not in {"GET", "POST"}:
+            return False
+        canonical = canonical_url(url)
+        if not canonical or canonical not in self.form_expected or not self.scope.form_allowed(canonical, method):
+            return False
+        self.form_expected.remove(canonical)
+        self.form_tests_submitted += 1
+        return True
+
+    def begin_form_request(self, url: str, method: str) -> bool:
+        canonical = canonical_url(url)
+        if not canonical or not self.scope.form_allowed(canonical, method):
+            self.form_tests_skipped += 1
+            return False
+        if self.form_tests_submitted + len(self.form_expected) >= self.config.max_form_tests:
+            self.form_tests_skipped += 1
+            return False
+        self.form_expected.add(canonical)
+        return True
+
+    def load_hidden_paths(self) -> None:
+        path = self.config.hidden_path_wordlist
+        if not path:
+            return
+        try:
+            lines = Path(path).read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeError):
+            self.inventory.issue("Hidden-path wordlist could not be read; bounded path discovery was skipped.")
+            return
+        for raw in lines:
+            if self.hidden_paths_enqueued >= self.config.max_hidden_paths:
+                self.inventory.issue("Hidden-path limit reached; remaining wordlist entries were not queued.")
+                break
+            value = raw.strip()
+            if not value or value.startswith("#") or any(c in value for c in "\\\x00\r\n"):
+                continue
+            value = value if value.startswith(("/", "http://", "https://")) else "/" + value
+            candidate = urljoin(self.config.target, value)
+            if origin(candidate) not in self.scope.origins:
+                continue
+            if self.enqueue(candidate, "hidden_path", depth=1,
+                            evidence="Bounded authorized wordlist candidate; existence unverified"):
+                self.hidden_paths_enqueued += 1
 
     def enqueue(self, url, source, depth=0, base="", method="GET", evidence=""):
         if base and not evidence:
@@ -152,7 +231,14 @@ class Scanner:
         parser.feed(text)
         parser.close()
         for target, kind in parser.links:
+            resolved = urljoin(parser.base, target)
+            if urlsplit(resolved).fragment:
+                if urlsplit(resolved).fragment.startswith("/"):
+                    self.add_browser_candidate(resolved, "spa_hash_route")
+                continue
             self.enqueue(target, kind if source == "crawl" else "browser_dom", depth + 1, base=parser.base)
+        for target in parser.spa_routes:
+            self.add_browser_candidate(urljoin(parser.base, target), "spa_hash_route")
         for form in parser.forms:
             ep = self.inventory.add(form.pop("url"), source="html_form" if source == "crawl" else "browser_form", base=parser.base,
                                     evidence="HTML form action, method and field names; form not submitted", **form)
@@ -210,6 +296,7 @@ class Scanner:
                 if self.config.discover_specs:
                     for path in SPEC_PATHS:
                         self.enqueue(site + path, "spec_probe", evidence="Common specification location; existence unverified")
+            self.load_hidden_paths()
             self.crawl()
             if self.config.browser and not self.fetcher.exhausted and self.stop_reason != "repeated_throttling":
                 from .browser import render_pages
@@ -243,6 +330,9 @@ class Scanner:
                              "remaining_queue": len(self.queue), "rejected_references": self.inventory.rejected,
                              "skipped": dict(self.skipped), "sources": dict(Counter(s.split(":")[0] for e in endpoints for s in e["sources"])),
                              "imports": self.inventory.imports, "browser": self.browser_result,
-                             "limits": {k: getattr(self.config, k) for k in ("max_requests", "max_depth", "max_seconds", "max_endpoints", "max_query_variants")},
+                             "websockets": list(self.websocket_channels.values()),
+                             "forms": {"enabled": self.config.form_testing, "submitted": self.form_tests_submitted, "skipped": self.form_tests_skipped},
+                             "hidden_paths": {"enabled": bool(self.config.hidden_path_wordlist), "queued": self.hidden_paths_enqueued, "limit": self.config.max_hidden_paths},
+                             "limits": {k: getattr(self.config, k) for k in ("max_requests", "max_depth", "max_seconds", "max_endpoints", "max_query_variants", "max_interactions", "max_hidden_paths", "max_form_tests")},
                              "limitations": gaps, "issues": self.inventory.issues},
                 "threat_catalogue": catalogue(), "endpoints": endpoints}

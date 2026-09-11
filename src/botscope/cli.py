@@ -31,6 +31,16 @@ def parser():
     scan.add_argument("--allow-private", action="store_true", default=None, help="Permit explicitly scoped private/loopback targets")
     scan.add_argument("--ignore-robots", action="store_true", help="Include routes excluded by robots.txt within your authorized scope")
     scan.add_argument("--browser", action="store_true", default=None, help="Render HTML and capture eligible runtime requests; requires Chromium")
+    scan.add_argument("--no-interact", dest="browser_interactions", action="store_false", default=None, help="Disable safe browser navigation/button interaction")
+    scan.add_argument("--max-interactions", type=int, help="Maximum safe browser controls to inspect per scan")
+    scan.add_argument("--websockets", dest="capture_websockets", action="store_true", default=None, help="Passively capture WebSocket channel/message schemas")
+    scan.add_argument("--session", dest="session_files", action="append", type=Path, help="Playwright storage-state JSON for an authorized user session (repeatable)")
+    scan.add_argument("--hidden-paths", dest="hidden_path_wordlist", type=Path, help="Bounded newline-delimited GET path wordlist; opt-in")
+    scan.add_argument("--max-hidden-paths", type=int, help="Maximum hidden paths to enqueue")
+    scan.add_argument("--test-forms", dest="form_testing", action="store_true", default=None, help="Submit generated harmless values only to an exact allowlist on private/staging scope")
+    scan.add_argument("--form-allowlist", action="append", default=None, help="Exact path/glob allowed for --test-forms (repeatable)")
+    scan.add_argument("--allow-sensitive-forms", action="store_true", default=None, help="Also permit explicitly allowlisted login/recovery forms; may lock accounts")
+    scan.add_argument("--max-form-tests", type=int, help="Maximum allowlisted forms to submit")
     scan.add_argument("--headers-file", help="Private JSON mapping exact origins to request headers")
     scan.add_argument("--ca-bundle", help="Custom CA bundle for trusted enterprise TLS")
     scan.add_argument("--offline", action="store_true", help="Analyze supplied files without sending target requests")
@@ -63,9 +73,11 @@ def config_from_args(args):
             raise ValueError("Unknown configuration keys: " + ", ".join(sorted(set(values) - valid)))
         # File references in a config are relative to that config, not the shell cwd.
         root = args.config.resolve().parent
-        for key in ("headers_file", "ca_bundle"):
+        for key in ("headers_file", "ca_bundle", "hidden_path_wordlist"):
             if values.get(key):
                 values[key] = str(root / values[key])
+        if values.get("session_files"):
+            values["session_files"] = [str(root / item) for item in values["session_files"]]
         values["imports"] = [{**item, "path": str(root / item["path"])} for item in values.get("imports", [])]
     for item in fields(Config):
         value = getattr(args, item.name, None)
@@ -73,6 +85,8 @@ def config_from_args(args):
             values[item.name] = value
     if args.ignore_robots:
         values["respect_robots"] = False
+    if args.form_allowlist is not None:
+        values["form_allowlist"] = args.form_allowlist
     imports = list(values.get("imports", []))
     for kind in ("openapi", "har", "postman", "inventory", "urls"):
         for path in getattr(args, kind) or []:
