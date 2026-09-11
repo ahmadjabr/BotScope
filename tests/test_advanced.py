@@ -6,6 +6,7 @@ from pathlib import Path
 from botscope.config import Config, Scope
 from botscope.discovery import PageParser, websocket_message_schema
 from botscope.scanner import Scanner
+from botscope.browser import _safe_control
 
 
 class AdvancedDiscoveryTests(unittest.TestCase):
@@ -53,6 +54,10 @@ class AdvancedDiscoveryTests(unittest.TestCase):
         scanner = Scanner(Config(target="https://shop.example.test", allow_private=True, browser=True))
         scanner.enqueue("https://shop.example.test/#/contact", "seed")
         self.assertIn("https://shop.example.test/#/contact", scanner.browser_candidates)
+
+    def test_login_page_navigation_is_safe_but_login_submission_is_not(self):
+        self.assertTrue(_safe_control({"tag": "button", "aria": "Go to login page", "inside_form": False}))
+        self.assertFalse(_safe_control({"tag": "button", "text": "Login", "inside_form": True}))
 
 
 if __name__ == "__main__":

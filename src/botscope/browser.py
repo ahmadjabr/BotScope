@@ -14,19 +14,22 @@ DANGEROUS = re.compile(
     r"(?i)(logout|sign\s*out|delete|remove|destroy|unsubscribe|purchase|checkout|pay|transfer|withdraw|send|resend|reset|revoke|cancel|approve|accept|reject|execute|trigger|submit|save|create|update|login|sign\s*in|register|otp|password|payment)"
 )
 NAVIGATION_WORDS = re.compile(r"(?i)(menu|nav|next|previous|back|tab|contact|about|home|profile|settings|products?|catalog|search|open|more)")
+AUTH_NAVIGATION = re.compile(r"(?i)(go\s+to|navigate|open).*(login|sign\s*in|register)|(login|sign\s*in|register).*(page|screen|view)")
 SENSITIVE_FIELD = re.compile(r"(?i)(password|passwd|token|secret|cookie|authorization|api[-_ ]?key|card|cvv|otp|code|session)")
 
 
 def _safe_control(control: dict) -> bool:
     text = " ".join(str(control.get(k) or "") for k in ("text", "aria", "name", "id", "href"))
-    if DANGEROUS.search(text) or control.get("inside_form"):
+    if control.get("inside_form"):
+        return False
+    if DANGEROUS.search(text) and not AUTH_NAVIGATION.search(text):
         return False
     if control.get("tag") == "a":
         href = str(control.get("href") or "")
         return bool(href) and not re.match(r"(?i)^(javascript:|mailto:|tel:)", href)
     if str(control.get("type") or "").lower() in {"submit", "reset"}:
         return False
-    return bool(control.get("data_route") or control.get("data_href") or control.get("aria_controls") or NAVIGATION_WORDS.search(text))
+    return bool(control.get("data_route") or control.get("data_href") or control.get("aria_controls") or NAVIGATION_WORDS.search(text) or AUTH_NAVIGATION.search(text))
 
 
 def _form_value(name: str, field_type: str, index: int) -> str:
