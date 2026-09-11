@@ -49,6 +49,11 @@ class AdvancedDiscoveryTests(unittest.TestCase):
             self.assertTrue(all(e.method == "GET" for e in hidden))
             self.assertEqual(scanner.hidden_paths_enqueued, 2)
 
+    def test_hash_seed_is_rendered_candidate(self):
+        scanner = Scanner(Config(target="https://shop.example.test", allow_private=True, browser=True))
+        scanner.enqueue("https://shop.example.test/#/contact", "seed")
+        self.assertIn("https://shop.example.test/#/contact", scanner.browser_candidates)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -114,6 +114,11 @@ class Scanner:
                 self.hidden_paths_enqueued += 1
 
     def enqueue(self, url, source, depth=0, base="", method="GET", evidence=""):
+        # Hash routes are client-side navigation targets. Keep the fragment for
+        # Playwright while also inventorying the underlying HTTP document.
+        browser_url = urljoin(base or self.config.target, url) if isinstance(url, str) else ""
+        if "#" in browser_url and urlsplit(browser_url).fragment.startswith("/"):
+            self.add_browser_candidate(browser_url, "spa_hash_seed" if source == "seed" else source)
         if base and not evidence:
             evidence = "Referenced from " + display_url(base)
         ep = self.inventory.add(url, method, source, base=base, evidence=evidence)
