@@ -31,6 +31,7 @@ def parser():
     scan.add_argument("--allow-private", action="store_true", default=None, help="Permit explicitly scoped private/loopback targets")
     scan.add_argument("--ignore-robots", action="store_true", help="Include routes excluded by robots.txt within your authorized scope")
     scan.add_argument("--browser", action="store_true", default=None, help="Render HTML and capture eligible runtime requests; requires Chromium")
+    scan.add_argument("--browser-pages", type=int, help="Maximum rendered browser URLs per supplied session")
     scan.add_argument("--no-interact", dest="browser_interactions", action="store_false", default=None, help="Disable safe browser navigation/button interaction")
     scan.add_argument("--max-interactions", type=int, help="Maximum safe browser controls to inspect per scan")
     scan.add_argument("--websockets", dest="capture_websockets", action="store_true", default=None, help="Passively capture WebSocket channel/message schemas")
