@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import re
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 from .discovery import body_parameter_names
-from .model import canonical_url, safe_label
+from .model import canonical_url
 from .transport import FetchError
 
 
